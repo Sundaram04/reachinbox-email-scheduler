@@ -47,6 +47,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32),
   SENDER_ENCRYPTION_KEY: z.string().min(32).optional(),
   AUTH_SUCCESS_REDIRECT: z.url().default("http://localhost:4000/api/me"),
+  FRONTEND_URL: z.url().default("http://localhost:3000"),
 });
 
 const parsed = envSchema.safeParse(process.env);

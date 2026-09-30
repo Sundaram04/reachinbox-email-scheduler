@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import type { Request, Response } from "express";
 
+import { env } from "../config/env";
 import { cookieOptions } from "../services/session.service";
 import {
   connectSlack,
@@ -24,31 +25,69 @@ export function startSlackConnect(_req: Request, res: Response) {
   return res.redirect(url);
 }
 
+function frontendRedirect(result: "connected" | "error", reason?: string) {
+  const url = new URL("/settings/slack", env.FRONTEND_URL);
+
+  url.searchParams.set("slack", result);
+
+  if (reason) {
+    url.searchParams.set("reason", reason);
+  }
+
+  return url.toString();
+}
+
+function failureReason(err: unknown, slackError: unknown) {
+  if (typeof slackError === "string") {
+    return /^[a-z_]{1,40}$/.test(slackError) ? slackError : "unknown";
+  }
+
+  if (!(err instanceof HttpError)) {
+    return "server_error";
+  }
+
+  if (err.status === 503) {
+    return "not_configured";
+  }
+
+  if (err.status === 502) {
+    return "slack_unavailable";
+  }
+
+  return err.message === "Invalid OAuth state"
+    ? "invalid_state"
+    : "authorization_failed";
+}
+
 export async function slackCallback(req: Request, res: Response) {
   const { code, state, error } = req.query;
   const savedState = req.cookies?.[SLACK_STATE_COOKIE];
 
   res.clearCookie(SLACK_STATE_COOKIE, cookieOptions);
 
-  if (error) {
-    throw new HttpError(
-      401,
-      `Slack authorization was cancelled or denied (${error})`,
-    );
+  try {
+    if (error) {
+      throw new HttpError(
+        401,
+        `Slack authorization was cancelled or denied (${error})`,
+      );
+    }
+
+    if (
+      typeof code !== "string" ||
+      typeof state !== "string" ||
+      !savedState ||
+      state !== savedState
+    ) {
+      throw new HttpError(400, "Invalid OAuth state");
+    }
+
+    await connectSlack(req.auth!.userId, code);
+
+    return res.redirect(frontendRedirect("connected"));
+  } catch (err) {
+    return res.redirect(frontendRedirect("error", failureReason(err, error)));
   }
-
-  if (
-    typeof code !== "string" ||
-    typeof state !== "string" ||
-    !savedState ||
-    state !== savedState
-  ) {
-    throw new HttpError(400, "Invalid OAuth state");
-  }
-
-  const connection = await connectSlack(req.auth!.userId, code);
-
-  return res.status(200).json({ connected: true, ...connection });
 }
 
 export async function slackStatus(req: Request, res: Response) {
