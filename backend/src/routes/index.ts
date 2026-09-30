@@ -1,4 +1,5 @@
 import { Router } from "express";
+import adminRoutes, { QUEUES_BASE_PATH } from "./admin.routes";
 import authRoutes from "./auth.routes";
 import emailRoutes from "./email.routes";
 import healthRoutes from "./health.routes";
@@ -14,5 +15,6 @@ router.use("/api/me", meRoutes);
 router.use("/api/emails", emailRoutes);
 router.use("/api/senders", senderRoutes);
 router.use("/api/slack", slackRoutes);
+router.use(QUEUES_BASE_PATH, adminRoutes);
 
 export default router;

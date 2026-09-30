@@ -32,6 +32,8 @@ const envSchema = z.object({
     .default("http://localhost:4000/api/slack/callback"),
   SLACK_API_URL: z.url().default("https://slack.com"),
 
+  ADMIN_EMAILS: z.string().optional(),
+
   CONCURRENCY: z.coerce.number().int().min(1).max(100).default(5),
   MIN_SEND_DELAY_MS: z.coerce.number().int().min(0).default(2000),
   EMAILS_PER_HOUR: z.coerce.number().int().min(1).default(100),

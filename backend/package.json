@@ -21,6 +21,8 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@bull-board/api": "^9.10.2",
+    "@bull-board/express": "^9.10.2",
     "@elastic/elasticsearch": "^8.19.2",
     "bullmq": "^6.3.10",
     "cookie-parser": "^1.4.7",
