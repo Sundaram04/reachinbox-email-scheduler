@@ -34,7 +34,7 @@ export function LoginCard({ errorCode }: { errorCode?: string }) {
   }
 
   return (
-    <div className="w-full max-w-[30rem] rounded-card border border-line bg-white px-14 py-12">
+    <div className="w-full max-w-[30rem] rounded-card border border-line bg-white px-6 py-10 sm:px-14 sm:py-12">
       <h1 className="text-center text-3xl font-semibold tracking-tight text-ink">
         Login
       </h1>

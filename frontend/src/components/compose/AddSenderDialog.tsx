@@ -172,7 +172,7 @@ export function AddSenderDialog({ onClose, onCreated }: AddSenderDialogProps) {
         aria-labelledby="add-sender-title"
         onSubmit={handleSubmit}
         noValidate
-        className="relative w-full max-w-md rounded-card bg-white p-6 shadow-xl"
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-card bg-white p-6 shadow-xl"
       >
         <h2 id="add-sender-title" className="text-base font-semibold text-ink">
           Add sender
