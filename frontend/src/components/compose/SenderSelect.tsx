@@ -65,7 +65,7 @@ export function SenderSelect({
             ? onAdd()
             : onChange(event.target.value)
         }
-        className="h-8 max-w-full appearance-none truncate rounded-field bg-field py-0 pl-3 pr-8 text-row text-ink outline-none focus:outline-2 focus:outline-brand"
+        className="h-8 max-w-full appearance-none truncate rounded-field bg-field py-0 pl-3 pr-8 text-row text-ink outline-none focus:outline-2 focus:outline-solid focus:outline-brand"
       >
         {senders.map((sender) => (
           <option key={sender.id} value={sender.id}>

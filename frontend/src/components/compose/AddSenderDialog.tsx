@@ -31,7 +31,7 @@ const EMPTY: Fields = {
 };
 
 const input =
-  "h-10 w-full rounded-field bg-field px-3 text-row text-ink outline-none placeholder:text-muted focus:outline-2 focus:outline-brand";
+  "h-10 w-full rounded-field bg-field px-3 text-row text-ink outline-none placeholder:text-muted focus:outline-2 focus:outline-solid focus:outline-brand";
 
 function validate(fields: Fields) {
   const errors: Partial<Record<keyof Fields, string>> = {};
@@ -72,11 +72,16 @@ export function AddSenderDialog({ onClose, onCreated }: AddSenderDialogProps) {
   const [returnFocusTo] = useState(
     () => document.activeElement as HTMLElement | null,
   );
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -100,12 +105,13 @@ export function AddSenderDialog({ onClose, onCreated }: AddSenderDialogProps) {
     }
 
     document.addEventListener("keydown", onKeyDown);
+    dialogRef.current?.querySelector("input")?.focus();
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       returnFocusTo?.focus();
     };
-  }, [onClose, returnFocusTo]);
+  }, [returnFocusTo]);
 
   function set<K extends keyof Fields>(key: K, value: string) {
     setFields((current) => ({ ...current, [key]: value }));
@@ -183,7 +189,7 @@ export function AddSenderDialog({ onClose, onCreated }: AddSenderDialogProps) {
         </p>
 
         <div className="mt-5 flex flex-col gap-3">
-          {rows.map((row, index) => (
+          {rows.map((row) => (
             <label key={row.key} className="block">
               <span className="mb-1 block text-xxs font-medium text-ink">
                 {row.label}
@@ -192,7 +198,6 @@ export function AddSenderDialog({ onClose, onCreated }: AddSenderDialogProps) {
                 type={row.type ?? "text"}
                 value={fields[row.key]}
                 onChange={(event) => set(row.key, event.target.value)}
-                autoFocus={index === 0}
                 autoComplete={row.type === "password" ? "new-password" : "off"}
                 inputMode={row.key === "smtpPort" ? "numeric" : undefined}
                 aria-invalid={Boolean(errors[row.key])}

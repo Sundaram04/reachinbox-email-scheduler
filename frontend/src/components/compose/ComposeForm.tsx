@@ -444,7 +444,7 @@ export function ComposeForm() {
               placeholder="Type your message…"
               aria-label="Message"
               aria-invalid={Boolean(errors.body)}
-              className="min-h-80 w-full resize-y rounded-card bg-field p-5 text-row leading-6 text-ink outline-none placeholder:text-muted focus:outline-2 focus:outline-brand aria-[invalid=true]:outline-2 aria-[invalid=true]:outline-danger"
+              className="min-h-80 w-full resize-y rounded-card bg-field p-5 text-row leading-6 text-ink outline-none placeholder:text-muted focus:outline-2 focus:outline-solid focus:outline-brand aria-[invalid=true]:outline-2 aria-[invalid=true]:outline-danger"
             />
             {errors.body && (
               <p role="alert" className="mt-1.5 text-xxs text-danger">
