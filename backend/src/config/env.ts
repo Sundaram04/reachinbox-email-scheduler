@@ -11,6 +11,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.url(),
   DB_POOL_MAX: z.coerce.number().int().positive().default(10),
+  REDIS_URL: z.url(),
 
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().min(1),
