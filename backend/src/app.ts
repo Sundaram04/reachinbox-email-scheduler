@@ -1,3 +1,4 @@
+import cookieParser from "cookie-parser";
 import express from "express";
 import routes from "./routes";
 import { requestLogger } from "./middleware/requestLogger";
@@ -7,6 +8,7 @@ import { errorHandler } from "./middleware/errorHandler";
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(requestLogger);
 app.use(routes);
 app.use(notFoundHandler);

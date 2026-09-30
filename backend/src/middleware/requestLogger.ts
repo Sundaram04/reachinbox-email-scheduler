@@ -5,10 +5,9 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
 
   res.on("finish", () => {
     const ms = Date.now() - start;
+    const path = req.originalUrl.split("?")[0];
 
-    console.log(
-      `${req.method} ${req.originalUrl} -> ${res.statusCode} (${ms}ms)`,
-    );
+    console.log(`${req.method} ${path} -> ${res.statusCode} (${ms}ms)`);
   });
 
   next();
