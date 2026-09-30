@@ -9,6 +9,7 @@ import { redisConnection } from "../queues/connection";
 import { sendEmail } from "../services/mail.service";
 import { syncEmailSafe } from "../services/search.service";
 import { getSenderSmtpConfig } from "../services/sender.service";
+import { notifyRateLimitReached } from "../services/slack.service";
 import { reserveSendSlot, waitForSendTurn } from "../services/rateLimit.service";
 
 const LOCK_DURATION_MS = 30_000;
@@ -32,6 +33,7 @@ export function createEmailWorker() {
           status: emails.status,
           senderId: emails.senderId,
           hourlyLimit: campaigns.hourlyLimit,
+          userId: campaigns.userId,
         })
         .from(emails)
         .innerJoin(campaigns, eq(emails.campaignId, campaigns.id))
@@ -48,10 +50,18 @@ export function createEmailWorker() {
       const senderKey = current.senderId ?? "default";
 
       if (job.data.slot === undefined) {
-        const slot = await reserveSendSlot(
+        const { slot, limitedWindow } = await reserveSendSlot(
           senderKey,
           Math.min(current.hourlyLimit, env.EMAILS_PER_HOUR),
         );
+
+        if (limitedWindow !== null) {
+          void notifyRateLimitReached(
+            current.userId,
+            limitedWindow,
+            new Date(slot),
+          );
+        }
 
         if (slot > Date.now()) {
           await db
