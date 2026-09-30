@@ -15,6 +15,7 @@ export const scheduleEmailsSchema = z
     startTime: z.iso.datetime({ offset: true }).transform((v) => new Date(v)),
     delaySeconds: z.number().int().min(0).max(3600),
     hourlyLimit: z.number().int().min(1).max(10_000),
+    senderIds: z.array(z.uuid()).min(1).max(20).optional(),
   })
   .strict()
   .superRefine((input, ctx) => {
@@ -58,3 +59,10 @@ export const listEmailsQuerySchema = z.object({
 });
 
 export type ListEmailsQuery = z.infer<typeof listEmailsQuerySchema>;
+
+export const searchEmailsQuerySchema = z.object({
+  q: z.string().trim().max(200).optional(),
+  status: z.enum(["scheduled", "processing", "sent", "failed"]).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).max(10_000).default(0),
+});

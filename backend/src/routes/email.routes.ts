@@ -4,6 +4,7 @@ import {
   listScheduledHandler,
   listSentHandler,
   scheduleEmailsHandler,
+  searchEmailsHandler,
 } from "../controllers/email.controller";
 import { requireAuth } from "../middleware/requireAuth";
 
@@ -14,6 +15,7 @@ router.use(requireAuth);
 router.post("/schedule", scheduleEmailsHandler);
 router.get("/scheduled", listScheduledHandler);
 router.get("/sent", listSentHandler);
+router.get("/search", searchEmailsHandler);
 router.get("/:id", getEmailHandler);
 
 export default router;

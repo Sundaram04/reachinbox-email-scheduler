@@ -3,6 +3,8 @@ import { and, asc, count, desc, eq, inArray, type SQL } from "drizzle-orm";
 import { db } from "../db";
 import { campaigns, emails } from "../db/schema";
 import { emailQueue } from "../queues/email.queue";
+import { indexEmailsSafe } from "./search.service";
+import { resolveSendersForUser } from "./sender.service";
 import type {
   ListEmailsQuery,
   ScheduleEmailsInput,
@@ -14,6 +16,7 @@ const emailColumns = {
   id: emails.id,
   campaignId: emails.campaignId,
   toEmail: emails.toEmail,
+  senderId: emails.senderId,
   status: emails.status,
   scheduledAt: emails.scheduledAt,
   sentAt: emails.sentAt,
@@ -23,10 +26,60 @@ const emailColumns = {
   subject: campaigns.subject,
 };
 
+function buildEmailJob(
+  email: {
+    id: string;
+    campaignId: string;
+    toEmail: string;
+    scheduledAt: Date;
+  },
+  now: number,
+) {
+  return {
+    name: "send-email",
+    data: {
+      emailId: email.id,
+      campaignId: email.campaignId,
+      toEmail: email.toEmail,
+    },
+    opts: {
+      jobId: email.id,
+      delay: Math.max(0, email.scheduledAt.getTime() - now),
+    },
+  };
+}
+
+export async function reenqueueScheduledEmails() {
+  const rows = await db
+    .select({
+      id: emails.id,
+      campaignId: emails.campaignId,
+      toEmail: emails.toEmail,
+      scheduledAt: emails.scheduledAt,
+    })
+    .from(emails)
+    .where(eq(emails.status, "scheduled"));
+
+  if (rows.length === 0) {
+    return 0;
+  }
+
+  const now = Date.now();
+
+  for (let i = 0; i < rows.length; i += INSERT_CHUNK_SIZE) {
+    await emailQueue.addBulk(
+      rows.slice(i, i + INSERT_CHUNK_SIZE).map((row) => buildEmailJob(row, now)),
+    );
+  }
+
+  return rows.length;
+}
+
 export async function scheduleEmails(
   userId: string,
   input: ScheduleEmailsInput,
 ) {
+  const senderIds = await resolveSendersForUser(userId, input.senderIds);
   const recipients = [...new Set(input.recipients)];
   const order = new Map(recipients.map((toEmail, index) => [toEmail, index]));
 
@@ -46,6 +99,7 @@ export async function scheduleEmails(
     const rows = recipients.map((toEmail, index) => ({
       campaignId: campaign.id,
       toEmail,
+      senderId: senderIds[index % senderIds.length],
       scheduledAt: new Date(
         input.startTime.getTime() + index * input.delaySeconds * 1000,
       ),
@@ -54,6 +108,7 @@ export async function scheduleEmails(
     const createdEmails: {
       id: string;
       toEmail: string;
+      senderId: string | null;
       status: (typeof emails.$inferSelect)["status"];
       scheduledAt: Date;
     }[] = [];
@@ -65,6 +120,7 @@ export async function scheduleEmails(
         .returning({
           id: emails.id,
           toEmail: emails.toEmail,
+          senderId: emails.senderId,
           status: emails.status,
           scheduledAt: emails.scheduledAt,
         });
@@ -81,23 +137,16 @@ export async function scheduleEmails(
     const now = Date.now();
 
     await emailQueue.addBulk(
-      createdEmails.map((email) => ({
-        name: "send-email",
-        data: {
-          emailId: email.id,
-          campaignId: campaign.id,
-          toEmail: email.toEmail,
-        },
-        opts: {
-          jobId: email.id,
-          delay: Math.max(0, email.scheduledAt.getTime() - now),
-        },
-      })),
+      createdEmails.map((email) =>
+        buildEmailJob({ ...email, campaignId: campaign.id }, now),
+      ),
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("Failed to enqueue email jobs:", message);
   }
+
+  void indexEmailsSafe(createdEmails.map((email) => email.id));
 
   return {
     campaign: {

@@ -4,6 +4,7 @@ import {
   emailIdParamSchema,
   listEmailsQuerySchema,
   scheduleEmailsSchema,
+  searchEmailsQuerySchema,
 } from "../schemas/email.schemas";
 import {
   findEmailForUser,
@@ -11,6 +12,7 @@ import {
   listSentEmails,
   scheduleEmails,
 } from "../services/email.service";
+import { searchEmails } from "../services/search.service";
 import { HttpError } from "../utils/HttpError";
 
 export async function scheduleEmailsHandler(req: Request, res: Response) {
@@ -43,4 +45,11 @@ export async function getEmailHandler(req: Request, res: Response) {
   }
 
   return res.status(200).json(email);
+}
+
+export async function searchEmailsHandler(req: Request, res: Response) {
+  const query = searchEmailsQuerySchema.parse(req.query);
+  const result = await searchEmails(req.auth!.userId, query);
+
+  return res.status(200).json(result);
 }
